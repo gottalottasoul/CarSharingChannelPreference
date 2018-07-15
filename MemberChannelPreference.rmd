@@ -1,0 +1,200 @@
+---
+title: "Member Channel Booking Trends"
+author: "Marketing Analytics"
+date: "February 12, 2016"
+output:
+  html_document:
+  depth: 3
+  highlight: tango
+  number_sections: yes
+  theme: cosmo
+  toc: yes
+pdf_document:
+  fig_caption: yes
+  toc: yes
+geometry: margin=0.5in
+fontsize: 11pt
+---
+```{r Code Block 1,results='hide',include=FALSE}
+require(zipcarFunctions)
+require(readr)
+require(dplyr)
+require(purrr)
+require(tidyr)
+require(lubridate)
+require(grid)
+require(gridExtra)
+require(cowplot)
+require(scales)
+require(ggplot2)
+require(knitr)
+
+
+members_rfm <- read_delim("C:/Users/babbenante/OneDrive - Avis Budget Group/My Stuff/reports/rfm/rfmscores20170130.txt"
+                          ," ", escape_double = FALSE
+                          , col_types = cols(MEMBER_ID = col_character())
+                          ,trim_ws = TRUE)
+
+
+Reservation_Details_Past_Year <- readRDS("c:/users/babbenante/downloads/ReservationDetailsPastYear.rds")
+
+load('c:/users/babbenante/downloads/FebAnalysisData.rmd')
+
+```
+##Executive Summary
+
+This report contains an analysis of platform booking trends for Zipcar North America, both from a raw count of reservations made as well as member preferences by segment is included.  The analysis includes all completed reservations from the start of 2016 through the end of January 2017.  Both initial booking platform - as well as 'last touch' platform - were included.  For the usage segment analysis, only member classifications for the last week of January were used due to performance considerations.
+
+The shift to mobile usage is noticeable, and more dramatic than previous years.  Mobile now is responsible for a majority of completed reservations.  However, a considerable amount of activity is still driven via the web - and a significant number of users interact across both channels (disproportionately so for high value users).  
+
+##Year over Year Usage Profile Analysis
+
+```{r Code Block 2, echo=FALSE, fig.width=10, fig.height=3.5, message=FALSE, warning=FALSE,out.extra='style="float:left;margin: auto;padding:3px; clear:both; "'}
+
+fig1 <- gather(monthly.channel.trend.last,channel,reservations,tot_web:tot_oth) %>%
+  filter(reporting.date < as.Date("2017-01-31")) %>%
+  ggplot(aes( reporting.date, reservations)) +
+  geom_area(aes(fill = channel), position = 'stack') +
+  fte_theme() +
+  scale_fill_manual(values = zipcar_color_palette(3)) +
+  labs(title = "Monthly Reservations by Last Booking Channel ", x = "Date", y = "Reservations") +
+  scale_y_continuous(labels = comma) +
+  theme(legend.title = element_blank(),legend.text = element_text(size = 5),legend.position = 'bottom') 
+
+fig2 <- gather(monthly.channel.trend.orig,channel,reservations,tot_web:tot_oth) %>%
+  filter(reporting.date<as.Date("2017-01-31")) %>%
+  ggplot(aes( reporting.date, reservations)) +
+  geom_area(aes(fill= channel), position = 'stack') +
+  fte_theme() +
+  scale_fill_manual(values=zipcar_color_palette(3))+
+  labs(title="Monthly Reservations by Original Booking Channel ", x="Date", y="Reservations") +
+  scale_y_continuous(labels = comma)+
+  theme(legend.title=element_blank(),legend.text=element_text(size=5),legend.position='bottom')
+
+plot_grid(fig1, NULL, fig2, labels = c("fig 1", "","fig 2"),rel_widths = c(4,1,4), label_size=8, vjust=34,ncol = 3, nrow = 1)
+#grid.arrange(fig1,fig2,ncol=3,nrow=1,widths=c(2, .5, 2))
+#         ,top=textGrob("Reservations by Platform",
+#                      gp=gpar(fontsize=16,font=1)))
+
+
+
+
+```
+
+
+Above, figure one shows the share of total completed reservations by the last channel used to make or modify the reservation.  Year over year (Jan to Jan), there is a noticeable shift to app, as both web and other have lost considerable basis points (roughly 400 each) to app share.  Figure 2 shows share of completed reservations by original booking channel.  
+
+Figure 2 show's the same period of observation, but measures completed reservations by original booking channel rather than last.  The 'other' channel loses most of its share in this view, as it consists mostly of IVR or call-center assisted bookings; which tend to be in reservation adjustments. Regardless, App reservations now account for 3/5ths of total reservations as of January 2017, with web still responsible for a little more than one out of three reservations.
+
+The next set of graphs charts members by their channel usage over a given time frame.  Figure 3 shows member preference by month, while Figure 4 represents member preference by quarter.
+
+```{r Code Block 3, echo=FALSE, fig.width=10, fig.height=3.5, message=FALSE, warning=FALSE,out.extra='style="float:left;margin: auto;padding:3px; clear:both; "'}
+
+fig1 <- monthly.user.trend.orig %>%
+  filter(reporting.date < as.Date("2017-01-31")) %>%
+  ggplot(aes( reporting.date, members)) +
+  geom_area(aes(fill = UserPreference), position = 'stack') +
+  fte_theme() +
+  scale_fill_manual(values = zipcar_color_palette(4)) +
+  labs(title = "Member Preference by Original Booking Channel ", x = "Date", y = "Members") +
+  scale_y_continuous(labels = comma) +
+  theme(legend.title = element_blank(),legend.text = element_text(size = 5),legend.position = 'bottom') 
+
+fig2 <- quarterly.user.trend.orig %>%
+  ggplot(aes( reporting.date, members)) +
+  geom_area(aes(fill = UserPreference), position = 'stack') +
+  fte_theme() +
+  scale_fill_manual(values = zipcar_color_palette(4)) +
+  labs(title = "Member Preference by Original Booking Channel ", x = "2016 Quarter", y = "Members") +
+  scale_y_continuous(labels = comma) +
+  theme(legend.title = element_blank(),legend.text = element_text(size = 5),legend.position = 'bottom') 
+
+plot_grid(fig1, NULL, fig2, labels = c("fig 3", "","fig 4"),rel_widths = c(4,1,4), label_size=8, vjust=34,ncol = 3, nrow = 1)
+#grid.arrange(fig1,fig2,ncol=3,nrow=1,widths=c(2, .5, 2))
+#         ,top=textGrob("Reservations by Platform",
+#                      gp=gpar(fontsize=16,font=1)))
+
+
+
+
+```
+
+The monthly chart shows a similar trend as the absolute reservations - a steady increase in shift to app.  App only monthly users gained over 9% share of total users between Jan 2016 to Jan 2017.  While combo users stayed relatively even, the majority of that share appears to be taken from Web only users, which dropped nearly 7.5% in monthly share.
+
+However, looking at monthly splits is a bit arbitrary (as both a starting point and length of measurement).  Figure four shows a similar story, but with a less aggressive shift to the mobile platform.  Looking at the number of booking channels a member uses over a quarter, and the share of combo users nearly doubles to just under 20% vs. the 10% of monthly users.  App only users continues to grow, from 34% share in Q1 to 41% in Q4.  The drastic change in share suggests a few things.  One, given member car usage patterns, there is not enough time in a given month to accurately reflect most members' reservation channel preferences.  Two, the inflated app only usage over a single month could possibly suggest a high number of single/low use members in that channel.
+
+To understand the impact on long-standing members, a cohort based view can be applied to the member view.  Filtering the reservation data to consider current Power User and Strong segments - but who have been a member for at least a year - the correpsonding reservation data by original booking channel is charted in Figure 5. 
+
+
+```{r Code Block 4, echo=FALSE, fig.width=10, fig.height=3.5, fig.cap='fig 5', message=FALSE, warning=FALSE,out.extra='style="float:left;margin: auto;padding:3px; clear:both; "'}
+
+members.rfm.compact <- members_rfm %>% 
+  filter(!grepl('2017|2016',FIRST_JOIN_COHORT)) %>%
+  select(MEMBER_ID,Profile)
+       
+Reservation_Details_Past_Year$Profile<-NULL    
+Reservation_Details_Past_Year<-left_join(Reservation_Details_Past_Year,members.rfm.compact,by="MEMBER_ID")
+
+monthly.channel.trend.orig.poweruser<-Reservation_Details_Past_Year %>% 
+  filter(Profile %in% c('Power User','Strong'))%>%
+  mutate(reporting.date=rollback(RESERVATION_DATE,roll_to_first=TRUE,preserve_hms=FALSE)) %>% 
+  #  group_by(reporting.date,MEMBER_ID) %>%
+  group_by(reporting.date) %>% 
+  summarise(tot_web=sum(ORIG_WEB_RES)
+            ,tot_app=sum(ORIG_APP_RES)
+            ,tot_oth=n()-tot_web-tot_app)
+
+#Top User Reservations by original booking channel 
+gather(monthly.channel.trend.orig.poweruser,channel,reservations,tot_web:tot_oth)%>%
+  filter(reporting.date<as.Date("2017-01-31"))%>%
+  ggplot(aes( reporting.date, reservations))+
+  geom_area(aes(fill= channel), position = 'stack') +
+  fte_theme() +
+  #  scale_fill_brewer(palette="Greens")+
+  scale_fill_manual(values=zipcar_color_palette(3))+
+  labs(title="Monthly High Value User Reservations by Original Booking Channel ", x="Date", y="Reservations") +
+  scale_y_continuous(labels = scales::comma)+
+  theme(legend.title=element_blank(),legend.text=element_text(size=5),legend.position='bottom')
+
+```
+
+As seen above, the general trends that have been identified still hold true, but the growth has been greatly tampered.  App reservations has grown Year over Year - mostly at the expense of web - but web still commands a large percentage of the reservation total for this high value cohort.  
+
+##Summary
+
+The growth of mobile is unquestionable, but a significant portion of member's still make use of web as a channel to interact with Zipcar.  Particularly as an initiaion point for reservations, there is reason to believe that member's might actually prefer planning/researching on desktop vs. through the app at this point.  
+
+Particular thought should be given to the experience of our frequent/high value members.  While they are shifting to mobile, a large portion of their reservation activity is triggered from the desktop.  When viewed through the lense of a mobile-only vs. mobile-first strategy, further analysis is warranted to understand what percentage of reservation activity would reasonably be anticipated to shift channels vs. be lost.  
+
+
+##Appendix A - Supporting Data
+
+```{r Code Block 10,echo=FALSE,message=FALSE, warning=FALSE,results='asis'}
+results.df<-monthly.channel.trend.last%>%filter(reporting.date<as.Date("2017-01-31"))
+
+kable(results.df,col.names = c('Reporting month','Web Reservations','App Reservations','Other Reservations'),caption='Reservations by Last Channel')
+
+results.df<-monthly.channel.trend.orig%>%filter(reporting.date<as.Date("2017-01-31"))
+
+kable(results.df,col.names = c('Reporting month','Web Reservations','App Reservations','Other Reservations'),caption='Reservations by Original Channel')
+
+results.df<-monthly.user.trend.orig%>%filter(reporting.date<as.Date("2017-01-31"))
+
+kable(results.df,col.names = c('Reporting month','Channel Preference','Members'),caption='Members by Original Channel Preference (monthly')
+
+results.df<-quarterly.user.trend.orig%>%filter(reporting.date<as.Date("2017-01-31"))
+
+kable(results.df,col.names = c('Reporting quarter','Channel Preference','Members'),caption='Members by Original Channel Preference (Quarter')
+
+results.df<-monthly.channel.trend.orig.poweruser%>%filter(reporting.date<as.Date("2017-01-31"))
+
+kable(results.df,col.names = c('Reporting month','Web Reservations','App Reservations','Other Reservations'),caption='High Performing Member Reservations by Original Channel')
+
+
+```
+
+
+
+
+
+
